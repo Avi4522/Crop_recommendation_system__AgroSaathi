@@ -1,0 +1,22 @@
+{
+    "name": "agro-saathi-root",
+    "version": "1.0.0",
+    "description": "Root configuration for Vercel Deployment",
+    "scripts": {
+        "postinstall": "prisma generate --schema=backend/prisma/schema.prisma"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.4.0",
+        "cors": "^2.8.6",
+        "express": "^5.2.1",
+        "prisma": "^6.4.0",
+        "sqlite3": "^5.1.7"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/node": "^20.0.0",
+        "typescript": "^5.9.3",
+        "@vercel/node": "^3.0.0"
+    }
+}

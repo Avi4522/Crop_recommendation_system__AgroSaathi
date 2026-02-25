@@ -1,9 +1,17 @@
 ﻿import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
 
 const app = express();
-const prisma = new PrismaClient();
+const isVercel = process.env.VERCEL === '1';
+const prisma = new PrismaClient(isVercel ? {
+  datasources: {
+    db: {
+      url: `file:${path.join(process.cwd(), 'backend', 'prisma', 'dev.db')}`
+    }
+  }
+} : undefined);
 
 app.use(cors());
 app.use(express.json());
