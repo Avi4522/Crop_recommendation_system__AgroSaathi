@@ -474,10 +474,32 @@ app.post('/api/seasonal-plan', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log('Server is running on port ' + PORT);
+
+// Static file serving for Render & Local environments
+const frontendPathRoot = path.join(process.cwd(), 'frontend');
+const frontendPathBackend = path.join(process.cwd(), '..', 'frontend');
+let staticPath = '';
+
+if (fs.existsSync(frontendPathRoot)) staticPath = frontendPathRoot;
+else if (fs.existsSync(frontendPathBackend)) staticPath = frontendPathBackend;
+
+if (staticPath) {
+  console.log(`Serving static frontend from: ${staticPath}`);
+  app.use(express.static(staticPath));
+  app.get('*', (req, res) => {
+    if (!req.url.startsWith('/api')) {
+      res.sendFile(path.join(staticPath, 'index.html'));
+    } else {
+      res.status(404).json({ error: 'API route not found' });
+    }
   });
 }
 
-module.exports = app;
+// Render strictly requires `app.listen()` to bind the port, Vercel does not.
+if (!isVercel) {
+  app.listen(PORT as number, '0.0.0.0', () => {
+    console.log(`Server is running natively on port ${PORT}`);
+  });
+}
+
+export default app;
