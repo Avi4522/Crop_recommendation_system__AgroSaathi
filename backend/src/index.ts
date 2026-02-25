@@ -2,16 +2,33 @@
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import fs from 'fs';
 
 const app = express();
 const isVercel = process.env.VERCEL === '1';
-const prisma = new PrismaClient(isVercel ? {
+
+let prismaUrl = 'file:./dev.db';
+if (isVercel) {
+  const sourceDb = path.join(process.cwd(), 'backend', 'prisma', 'dev.db');
+  const targetDb = '/tmp/dev.db';
+
+  try {
+    if (fs.existsSync(sourceDb) && !fs.existsSync(targetDb)) {
+      fs.copyFileSync(sourceDb, targetDb);
+    }
+    prismaUrl = `file:${targetDb}`;
+  } catch (e) {
+    console.error('Failed to copy sqlite file to tmp', e);
+  }
+}
+
+const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: `file:${path.join(process.cwd(), 'backend', 'prisma', 'dev.db')}`
+      url: prismaUrl
     }
   }
-} : undefined);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -443,4 +460,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-export default app;
+module.exports = app;
