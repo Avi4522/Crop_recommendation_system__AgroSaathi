@@ -26,9 +26,17 @@ if (isVercel) {
   }
 
   if (foundDbPath) {
-    // No need to copy to /tmp since we just perform READ operations on Vercel
-    prismaUrl = `file:${foundDbPath}`;
-    console.log(`Vercel DB correctly identified at: ${foundDbPath}`);
+    const targetDb = '/tmp/dev.db';
+    try {
+      if (!fs.existsSync(targetDb)) {
+        fs.copyFileSync(foundDbPath, targetDb);
+      }
+      prismaUrl = `file:${targetDb}`;
+      console.log(`Vercel DB effectively moved and bound to: ${targetDb}`);
+    } catch (e) {
+      console.error('Failed to copy sqlite file to tmp', e);
+      prismaUrl = `file:${foundDbPath}`; // Fallback if copy fails
+    }
   } else {
     console.error('CRITICAL: SQLite db not found anywhere in Vercel bundle. Ensure vercel.json `includeFiles` is correct.');
   }
