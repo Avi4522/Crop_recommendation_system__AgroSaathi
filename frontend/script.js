@@ -1,5 +1,5 @@
 const app = {
-    apiUrl: 'http://localhost:5000/api',
+    apiUrl: '/api',
     currentStep: 1,
     totalSteps: 3,
     currentLang: 'en',
