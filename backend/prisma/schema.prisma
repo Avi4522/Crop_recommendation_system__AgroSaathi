@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String           @id @default(uuid())
+  name            String
+  phone           String           @unique
+  districtId      String
+  village         String?
+  farmSizeHectares Float
+  soilType        String           // Comma-separated or JSON
+  waterSources    String           // Comma-separated or JSON
+  experienceLevel String           // Beginner, Intermediate, Experienced, Commercial
+  preferences     String?          // JSON of preferences (organic, quick harvest, etc.)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  district        District         @relation(fields: [districtId], references: [id])
+  recommendations Recommendation[]
+}
+
+model District {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  region          String   // North, Central, South, Saurashtra, Kutch
+  primaryCities   String   // Comma-separated
+  avgRainfallMm   Int
+  minTempC        Float
+  maxTempC        Float
+  dominantSoils   String   // Comma-separated
+  description     String
+  
+  users           User[]
+  apmcCenters     ApmcCenter[]
+}
+
+model Crop {
+  id                String   @id @default(uuid())
+  nameEn            String
+  nameGu            String
+  nameHi            String
+  category          String   // Cereal, Pulse, Oil Seed, Cash Crop, Vegetable, Spice, Fruit, Fodder
+  icon              String?
+  
+  // Growing Conditions
+  optimalRainfallMin Int
+  optimalRainfallMax Int
+  optimalTempMin    Float
+  optimalTempMax    Float
+  suitableSoilTypes String   // Comma-separated
+  minPh             Float
+  maxPh             Float
+  waterReqLitersHec Int
+  growingSeasonDays Int
+  suitableSeasons   String   // Kharif, Rabi, Summer
+  suitableTalukas   String?  // Comma-separated list for hyper-local logic
+  
+  // Economics
+  yieldMinQuintalHec Float
+  yieldMaxQuintalHec Float
+  costSeedHec        Float
+  costFertilizerHec  Float
+  costLaborHec       Float
+  costOtherHec       Float
+  laborDaysHec       Int
+  difficultyLevel    Int      // 1-5
+  
+  // Detailed Info JSONs for flexibility
+  pestManagement    String?  // JSON
+  fertilizerSchedule String? // JSON
+  irrigationSchedule String? // JSON
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  prices            ApmcPrice[]
+  recommendations   Recommendation[]
+  cropSchemes       CropScheme[]
+}
+
+model ApmcCenter {
+  id          String   @id @default(uuid())
+  name        String
+  districtId  String
+  type        String   // Major, Minor
+  
+  district    District @relation(fields: [districtId], references: [id])
+  prices      ApmcPrice[]
+}
+
+model ApmcPrice {
+  id          String   @id @default(uuid())
+  cropId      String
+  apmcId      String
+  pricePerQuintal Float
+  date        DateTime @default(now())
+  
+  crop        Crop     @relation(fields: [cropId], references: [id])
+  apmcCenter  ApmcCenter @relation(fields: [apmcId], references: [id])
+
+  @@unique([cropId, apmcId, date])
+}
+
+model GovernmentScheme {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  eligibility String
+  subsidyAmount String
+  link        String?
+  
+  cropSchemes CropScheme[]
+}
+
+model CropScheme {
+  id          String   @id @default(uuid())
+  cropId      String
+  schemeId    String
+  
+  crop        Crop     @relation(fields: [cropId], references: [id])
+  scheme      GovernmentScheme @relation(fields: [schemeId], references: [id])
+
+  @@unique([cropId, schemeId])
+}
+
+model Recommendation {
+  id              String   @id @default(uuid())
+  userId          String
+  cropId          String
+  suitabilityScore Int      // 0-100
+  scoreBreakdown  String   // JSON containing soil, water, temp, etc. scores
+  estimatedProfit Float
+  createdAt       DateTime @default(now())
+  feedbackRating  Int?     // User feedback on success (1-5)
+  feedbackNotes   String?
+  
+  user            User     @relation(fields: [userId], references: [id])
+  crop            Crop     @relation(fields: [cropId], references: [id])
+}
