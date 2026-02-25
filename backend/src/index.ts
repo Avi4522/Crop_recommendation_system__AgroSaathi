@@ -9,16 +9,28 @@ const isVercel = process.env.VERCEL === '1';
 
 let prismaUrl = 'file:./dev.db';
 if (isVercel) {
-  const sourceDb = path.join(process.cwd(), 'backend', 'prisma', 'dev.db');
-  const targetDb = '/tmp/dev.db';
+  // Vercel deployment could have different working directories based on build settings
+  const possiblePaths = [
+    path.join(process.cwd(), 'backend', 'prisma', 'dev.db'),
+    path.join(__dirname, '..', 'prisma', 'dev.db'),
+    path.join(__dirname, 'backend', 'prisma', 'dev.db'),
+    path.join(process.cwd(), 'prisma', 'dev.db') // if nested
+  ];
 
-  try {
-    if (fs.existsSync(sourceDb) && !fs.existsSync(targetDb)) {
-      fs.copyFileSync(sourceDb, targetDb);
+  let foundDbPath = null;
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      foundDbPath = p;
+      break;
     }
-    prismaUrl = `file:${targetDb}`;
-  } catch (e) {
-    console.error('Failed to copy sqlite file to tmp', e);
+  }
+
+  if (foundDbPath) {
+    // No need to copy to /tmp since we just perform READ operations on Vercel
+    prismaUrl = `file:${foundDbPath}`;
+    console.log(`Vercel DB correctly identified at: ${foundDbPath}`);
+  } else {
+    console.error('CRITICAL: SQLite db not found anywhere in Vercel bundle. Ensure vercel.json `includeFiles` is correct.');
   }
 }
 
